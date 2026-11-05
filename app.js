@@ -1,23 +1,27 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const { MongoMemoryServer } = require("mongodb-memory-server");
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const poliRoutes = require('./routes/poliRoutes');
+const pasienRoutes = require('./routes/pasienRoutes');
+const { notFoundHandler, errorHandler } = require('./middlewares/errorHandler');
 
 const app = express();
 app.use(express.json());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN,
+  methods: ['GET', 'POST']
+}));
 
-const startMemoryServer = async () => {
-  try {
-    const mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-    console.log("Terhubung ke MongoDB Memory Server");
-    await seedDatabase();
-  } catch (err) {
-    console.error("Koneksi MongoDB gagal:", err);
-  }
-};
+app.use('/poli', poliRoutes);
+app.use('/pasien', pasienRoutes);
 
-const StafSchema = new mongoose.Schema({
-  namaStaf: { type: String, required: true },
-  spesialisasi: { type: String, required: true }
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+connectDB().then(() => {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 });
